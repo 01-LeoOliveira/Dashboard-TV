@@ -112,7 +112,7 @@
 
         initClient().then(() => {
             changeImage();
-            setInterval(changeImage, 10000);
+            setInterval(changeImage, 60000);
         }).catch(error => {
             showError('Erro ao inicializar: ' + error.message);
         });
