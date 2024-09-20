@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard TV</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        #imageContainer {
+            max-width: 100%;
+            max-height: 100%;
+            position: relative;
+        }
+        img {
+            max-width: 100%;
+            max-height: 100vh;
+            object-fit: contain;
+            transition: opacity 0.5s ease-in-out;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+        }
+        #error {
+            color: red;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="imageContainer">
+        <img id="currentImage" src="" alt="Relatório de Produtividade">
+        <div id="loading">Carregando...</div>
+    </div>
+    <div id="error"></div>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        // Substitua com seu ID de pasta e Chave de API
+        const FOLDER_ID = '1fDUpVVse5HpIs6Rv8oFuHmpF36ZUbIoI';
+        const API_KEY = 'AIzaSyBT_UvwH2mg-QtCGEkqkAFxlV4dfjMRHgw'; // Substitua isso por um método mais seguro
+
+        function loadClient() {
+            return new Promise((resolve) => {
+                gapi.load('client', resolve);
+            });
+        }
+
+        async function initClient() {
+            try {
+                await loadClient();
+                await gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+                });
+            } catch (error) {
+                showError('Erro ao inicializar o cliente: ' + error.message);
+            }
+        }
+
+        async function getImagesFromDrive() {
+            try {
+                const response = await gapi.client.drive.files.list({
+                    q: `'${FOLDER_ID}' in parents and mimeType contains 'image/'`,
+                    fields: 'files(id, name)',
+                });
+                return response.result.files;
+            } catch (error) {
+                showError('Erro ao obter imagens: ' + error.message);
+                return [];
+            }
+        }
+
+        async function changeImage() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('currentImage').style.opacity = '0';
+            
+            const images = await getImagesFromDrive();
+            if (images.length > 0) {
+                const randomImage = images[Math.floor(Math.random() * images.length)];
+                const imageUrl = `https://drive.google.com/uc?export=view&id=${randomImage.id}`;
+                const img = document.getElementById('currentImage');
+                img.onload = () => {
+                    document.getElementById('loading').style.display = 'none';
+                    img.style.opacity = '1';
+                };
+                img.src = imageUrl;
+            } else {
+                showError('Nenhuma imagem encontrada na pasta.');
+            }
+        }
+
+        function showError(message) {
+            const errorElement = document.getElementById('error');
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        initClient().then(() => {
+            changeImage();
+            setInterval(changeImage, 10000);
+        }).catch(error => {
+            showError('Erro ao inicializar: ' + error.message);
+        });
+    </script>
+</body>
+</html>
+
+
+AIzaSyBT_UvwH2mg-QtCGEkqkAFxlV4dfjMRHgw
