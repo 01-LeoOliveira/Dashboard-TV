@@ -15,7 +15,7 @@
 
     .swiper-container {
       width: 100%;
-      height: 100%;
+      height: 100vh; /* Ajuste para ocupar toda a altura da viewport */
     }
 
     .swiper-slide {
@@ -25,9 +25,9 @@
     }
 
     .swiper-slide img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover; /* Faz a imagem preencher a tela completamente */
+      width: 90vw;  /* Ocupa 90% da largura da viewport */
+      height: 90vh; /* Ocupa 90% da altura da viewport */
+      object-fit: contain;
       opacity: 0;
       transition: opacity 0.5s ease-in;
     }
@@ -84,7 +84,7 @@
           data.files.forEach(file => {
             // Verifica se o arquivo é uma imagem
             if (file.mimeType.startsWith('image/')) {
-              const imageUrl = `https://drive.google.com/uc?id=${file.id}`;
+              const imageUrl = `https://drive.google.com/thumbnail?id=${file.id}`;
               
               const slide = document.createElement('div');
               slide.classList.add('swiper-slide');
@@ -92,7 +92,6 @@
               const img = document.createElement('img');
               img.src = imageUrl;
               img.alt = file.name;
-              img.loading = 'lazy'; // Lazy loading para melhorar o desempenho
 
               // Adiciona um evento 'onload' para garantir que a imagem carregue completamente
               img.onload = () => {
