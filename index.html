@@ -1,124 +1,132 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard TV</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-        #imageContainer {
-            max-width: 100%;
-            max-height: 100%;
-            position: relative;
-        }
-        img {
-            max-width: 100%;
-            max-height: 100vh;
-            object-fit: contain;
-            transition: opacity 0.5s ease-in-out;
-        }
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 24px;
-        }
-        #error {
-            color: red;
-            text-align: center;
-            display: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carrossel de Imagens via Google Drive</title>
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+
+    .swiper-container {
+      width: 100%;
+      height: 100%;
+    }
+
+    .swiper-slide {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .swiper-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; /* Faz a imagem preencher a tela completamente */
+      opacity: 0;
+      transition: opacity 0.5s ease-in;
+    }
+
+    /* Estilo do Formulário */
+    .upload-form {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 10px 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .upload-form input[type="file"] {
+      margin-right: 10px;
+    }
+  </style>
 </head>
 <body>
-    <div id="imageContainer">
-        <img id="currentImage" src="" alt="Relatório de Produtividade">
-        <div id="loading">Carregando...</div>
+  
+  <!-- Carrossel de Imagens -->
+  <div class="swiper-container">
+    <div class="swiper-wrapper" id="carousel-images">
+      <!-- Imagens serão inseridas dinamicamente -->
     </div>
-    <div id="error"></div>
 
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script>
-        // Substitua com seu ID de pasta e Chave de API
-        const FOLDER_ID = '1fDUpVVse5HpIs6Rv8oFuHmpF36ZUbIoI';
-        const API_KEY = 'AIzaSyBT_UvwH2mg-QtCGEkqkAFxlV4dfjMRHgw'; // Substitua isso por um método mais seguro
+    <!-- Add Arrows -->
+    <div class="swiper-button-next"></div>
+    <div class="swiper-button-prev"></div>
+  </div>
 
-        function loadClient() {
-            return new Promise((resolve) => {
-                gapi.load('client', resolve);
-            });
-        }
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <script>
+    const FOLDER_ID = '1fDUpVVse5HpIs6Rv8oFuHmpF36ZUbIoI'; // ID da pasta no Google Drive
+    const API_KEY = 'AIzaSyBT_UvwH2mg-QtCGEkqkAFxlV4dfjMRHgw'; // Sua chave de API
 
-        async function initClient() {
-            try {
-                await loadClient();
-                await gapi.client.init({
-                    apiKey: API_KEY,
-                    discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-                });
-            } catch (error) {
-                showError('Erro ao inicializar o cliente: ' + error.message);
+    const carouselImages = document.getElementById('carousel-images');
+
+    // Função para buscar imagens da API do Google Drive
+    async function fetchGoogleDriveImages() {
+      const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&key=${API_KEY}&fields=files(id,name,mimeType)`;
+      
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.files) {
+          // Limpar o carrossel antes de carregar novas imagens
+          carouselImages.innerHTML = '';
+
+          data.files.forEach(file => {
+            // Verifica se o arquivo é uma imagem
+            if (file.mimeType.startsWith('image/')) {
+              const imageUrl = `https://drive.google.com/uc?id=${file.id}`;
+              
+              const slide = document.createElement('div');
+              slide.classList.add('swiper-slide');
+              
+              const img = document.createElement('img');
+              img.src = imageUrl;
+              img.alt = file.name;
+              img.loading = 'lazy'; // Lazy loading para melhorar o desempenho
+
+              // Adiciona um evento 'onload' para garantir que a imagem carregue completamente
+              img.onload = () => {
+                img.style.opacity = '1'; // Exibe a imagem após o carregamento
+              };
+              
+              slide.appendChild(img);
+              carouselImages.appendChild(slide);
             }
-        }
+          });
 
-        async function getImagesFromDrive() {
-            try {
-                const response = await gapi.client.drive.files.list({
-                    q: `'${FOLDER_ID}' in parents and mimeType contains 'image/'`,
-                    fields: 'files(id, name)',
-                });
-                return response.result.files;
-            } catch (error) {
-                showError('Erro ao obter imagens: ' + error.message);
-                return [];
-            }
+          // Atualiza o carrossel para as novas imagens
+          swiper.update();
         }
+      } catch (error) {
+        console.error('Erro ao buscar imagens:', error);
+      }
+    }
 
-        async function changeImage() {
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('currentImage').style.opacity = '0';
-            
-            const images = await getImagesFromDrive();
-            if (images.length > 0) {
-                const randomImage = images[Math.floor(Math.random() * images.length)];
-                const imageUrl = `https://drive.google.com/uc?export=view&id=${randomImage.id}`;
-                const img = document.getElementById('currentImage');
-                img.onload = () => {
-                    document.getElementById('loading').style.display = 'none';
-                    img.style.opacity = '1';
-                };
-                img.src = imageUrl;
-            } else {
-                showError('Nenhuma imagem encontrada na pasta.');
-            }
-        }
+    // Inicialização do carrossel Swiper com autoplay para mudar as imagens a cada 30 segundos
+    const swiper = new Swiper('.swiper-container', {
+      loop: true,
+      navigation: {
+        nextEl: '.swiper-button-next',
+        prevEl: '.swiper-button-prev',
+      },
+      autoplay: {
+        delay: 30000, // 30 segundos
+        disableOnInteraction: false, // Continuar o autoplay mesmo após interação
+      },
+    });
 
-        function showError(message) {
-            const errorElement = document.getElementById('error');
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-        }
-
-        initClient().then(() => {
-            changeImage();
-            setInterval(changeImage, 60000);
-        }).catch(error => {
-            showError('Erro ao inicializar: ' + error.message);
-        });
-    </script>
+    // Chamar a função para carregar as imagens
+    fetchGoogleDriveImages();
+  </script>
 </body>
 </html>
-
-
-AIzaSyBT_UvwH2mg-QtCGEkqkAFxlV4dfjMRHgw
