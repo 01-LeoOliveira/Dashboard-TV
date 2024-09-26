@@ -84,7 +84,8 @@
           data.files.forEach(file => {
             // Verifica se o arquivo é uma imagem
             if (file.mimeType.startsWith('image/')) {
-              const imageUrl = `https://drive.google.com/thumbnail?id=${file.id}`;
+              const imageUrl = `https://lh3.googleusercontent.com/d/${file.id}=s1080`;
+
               
               const slide = document.createElement('div');
               slide.classList.add('swiper-slide');
