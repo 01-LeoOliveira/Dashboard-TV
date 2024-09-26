@@ -15,7 +15,7 @@
 
     .swiper-container {
       width: 100%;
-      height: 100vh; /* Ajuste para ocupar toda a altura da viewport */
+      height: 100vh;
     }
 
     .swiper-slide {
@@ -25,8 +25,8 @@
     }
 
     .swiper-slide img {
-      width: 90vw;  /* Ocupa 90% da largura da viewport */
-      height: 90vh; /* Ocupa 90% da altura da viewport */
+      width: 90vw;
+      height: 90vh;
       object-fit: contain;
       opacity: 0;
       transition: opacity 0.5s ease-in;
@@ -47,10 +47,21 @@
     .upload-form input[type="file"] {
       margin-right: 10px;
     }
+
+    /* Estilo para mensagem de erro */
+    .error-message {
+      color: red;
+      text-align: center;
+      margin: 20px;
+      display: none; /* Escondido por padrão */
+    }
   </style>
 </head>
 <body>
   
+  <!-- Mensagem de Erro -->
+  <div class="error-message" id="error-message">Erro ao carregar imagens. Tente novamente mais tarde.</div>
+
   <!-- Carrossel de Imagens -->
   <div class="swiper-container">
     <div class="swiper-wrapper" id="carousel-images">
@@ -68,6 +79,7 @@
     const API_KEY = 'AIzaSyBT_UvwH2mg-QtCGEkqkAFxlV4dfjMRHgw'; // Sua chave de API
 
     const carouselImages = document.getElementById('carousel-images');
+    const errorMessage = document.getElementById('error-message');
 
     // Função para buscar imagens da API do Google Drive
     async function fetchGoogleDriveImages() {
@@ -76,17 +88,17 @@
       try {
         const response = await fetch(url);
         const data = await response.json();
-        
-        if (data.files) {
+
+        if (data.files && data.files.length > 0) {
           // Limpar o carrossel antes de carregar novas imagens
           carouselImages.innerHTML = '';
+          errorMessage.style.display = 'none'; // Esconder a mensagem de erro
 
           data.files.forEach(file => {
             // Verifica se o arquivo é uma imagem
             if (file.mimeType.startsWith('image/')) {
               const imageUrl = `https://lh3.googleusercontent.com/d/${file.id}=s1080`;
 
-              
               const slide = document.createElement('div');
               slide.classList.add('swiper-slide');
               
@@ -99,6 +111,11 @@
                 img.style.opacity = '1'; // Exibe a imagem após o carregamento
               };
               
+              img.onerror = () => {
+                console.error('Erro ao carregar imagem:', imageUrl);
+                img.src = ''; // Limpa a imagem se houver erro
+              };
+              
               slide.appendChild(img);
               carouselImages.appendChild(slide);
             }
@@ -106,9 +123,13 @@
 
           // Atualiza o carrossel para as novas imagens
           swiper.update();
+        } else {
+          // Se não houver arquivos, mostrar mensagem de erro
+          errorMessage.style.display = 'block';
         }
       } catch (error) {
         console.error('Erro ao buscar imagens:', error);
+        errorMessage.style.display = 'block'; // Mostrar mensagem de erro
       }
     }
 
@@ -120,14 +141,20 @@
         prevEl: '.swiper-button-prev',
       },
       autoplay: {
-        delay: 20000, // 30 segundos
+        delay: 30000, // 30 segundos
         disableOnInteraction: false, // Continuar o autoplay mesmo após interação
       },
     });
 
     // Chamar a função para carregar as imagens
     fetchGoogleDriveImages();
+
+    // Adicionar um timer para garantir que o autoplay funcione
+    setInterval(() => {
+      if (swiper.slides.length > 0) { // Verifica se há slides
+        swiper.slideNext(); // Muda para o próximo slide
+      }
+    }, 30000); // Troca a cada 30 segundos
   </script>
 </body>
 </html>
-/* teste*/ 
