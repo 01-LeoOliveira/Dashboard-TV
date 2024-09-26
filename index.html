@@ -160,6 +160,11 @@
       swiper.slideNext(); // Forçar a mudança para o próximo slide
     }, 20000); // A cada 20 segundos
 
+    // Atualizar a página a cada 2 minutos (120000 ms)
+    setInterval(() => {
+      location.reload(); // Recarrega a página, como pressionar F5
+    }, 120000); // 2 minutos em milissegundos
+
     // Chamar a função para carregar as imagens
     fetchGoogleDriveImages();
   </script>
