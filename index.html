@@ -24,12 +24,17 @@
       align-items: center;
     }
 
-    .swiper-slide img {
+    .swiper-slide img, .swiper-slide video {
       width: 90vw;
       height: 90vh;
       object-fit: contain;
       opacity: 0;
       transition: opacity 0.5s ease-in;
+    }
+
+    .swiper-slide video {
+      width: 100%;
+      height: 100%;
     }
 
     /* Estilo do Formulário */
@@ -58,14 +63,14 @@
   </style>
 </head>
 <body>
-  
+
   <!-- Mensagem de Erro -->
   <div class="error-message" id="error-message">Erro ao carregar imagens. Tente novamente mais tarde.</div>
 
   <!-- Carrossel de Imagens -->
   <div class="swiper-container">
     <div class="swiper-wrapper" id="carousel-images">
-      <!-- Imagens serão inseridas dinamicamente -->
+      <!-- Imagens e vídeos serão inseridos dinamicamente -->
     </div>
 
     <!-- Add Arrows -->
@@ -81,8 +86,8 @@
     const carouselImages = document.getElementById('carousel-images');
     const errorMessage = document.getElementById('error-message');
 
-    // Função para buscar imagens da API do Google Drive
-    async function fetchGoogleDriveImages() {
+    // Função para buscar imagens e vídeos da API do Google Drive
+    async function fetchGoogleDriveFiles() {
       const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents&key=${API_KEY}&fields=files(id,name,mimeType)`;
       
       try {
@@ -90,50 +95,70 @@
         const data = await response.json();
 
         if (data.files && data.files.length > 0) {
-          // Limpar o carrossel antes de carregar novas imagens
+          // Limpar o carrossel antes de carregar novos arquivos
           carouselImages.innerHTML = '';
           errorMessage.style.display = 'none'; // Esconder a mensagem de erro
 
           data.files.forEach(file => {
-            // Verifica se o arquivo é uma imagem
-            if (file.mimeType.startsWith('image/')) {
-              const imageUrl = `https://lh3.googleusercontent.com/d/${file.id}=s1080`;
+            const mimeType = file.mimeType;
+            const slide = document.createElement('div');
+            slide.classList.add('swiper-slide');
 
-              const slide = document.createElement('div');
-              slide.classList.add('swiper-slide');
-              
+            // Se for uma imagem
+            if (mimeType.startsWith('image/')) {
+              const imageUrl = `https://lh3.googleusercontent.com/d/${file.id}=s1080`;
               const img = document.createElement('img');
               img.src = imageUrl;
               img.alt = file.name;
 
-              // Adiciona um evento 'onload' para garantir que a imagem carregue completamente
               img.onload = () => {
                 img.style.opacity = '1'; // Exibe a imagem após o carregamento
               };
-              
+
               img.onerror = () => {
                 console.error('Erro ao carregar imagem:', imageUrl);
-                img.src = ''; // Limpa a imagem se houver erro
               };
-              
+
               slide.appendChild(img);
-              carouselImages.appendChild(slide);
             }
+
+            // Se for um vídeo
+            if (mimeType.startsWith('video/')) {
+              const videoUrl = `https://drive.google.com/uc?id=${file.id}&export=download`;
+              const video = document.createElement('video');
+              video.src = videoUrl;
+              video.controls = false;
+              video.autoplay = false;
+              video.loop = false;
+              video.muted = true; // Video sem som
+              
+              video.oncanplay = () => {
+                video.style.opacity = '1'; // Exibe o vídeo após o carregamento
+              };
+
+              video.onerror = () => {
+                console.error('Erro ao carregar vídeo:', videoUrl);
+              };
+
+              slide.appendChild(video);
+            }
+
+            carouselImages.appendChild(slide);
           });
 
-          // Atualiza o carrossel para as novas imagens
+          // Atualiza o carrossel para os novos arquivos
           swiper.update();
         } else {
           // Se não houver arquivos, mostrar mensagem de erro
           errorMessage.style.display = 'block';
         }
       } catch (error) {
-        console.error('Erro ao buscar imagens:', error);
+        console.error('Erro ao buscar arquivos:', error);
         errorMessage.style.display = 'block'; // Mostrar mensagem de erro
       }
     }
 
-    // Inicialização do carrossel Swiper com autoplay para mudar as imagens a cada 20 segundos
+    // Inicialização do carrossel Swiper com autoplay para imagens e vídeos
     const swiper = new Swiper('.swiper-container', {
       loop: true,
       navigation: {
@@ -141,32 +166,30 @@
         prevEl: '.swiper-button-prev',
       },
       autoplay: {
-        delay: 20000, // 20 segundos
+        delay: 20000, // 20 segundos para imagens
         disableOnInteraction: false, // Continuar o autoplay mesmo após interação
       },
       on: {
-        init: function () {
-          console.log('Swiper inicializado!');
+        slideChangeTransitionStart: function () {
+          const currentSlide = swiper.slides[swiper.activeIndex];
+          const video = currentSlide.querySelector('video');
+
+          if (video) {
+            // Pausar autoplay se for um vídeo e reproduzir o vídeo
+            swiper.autoplay.stop();
+            video.play();
+
+            // Quando o vídeo terminar, retomar o autoplay
+            video.onended = function () {
+              swiper.autoplay.start();
+            };
+          }
         },
-        autoplay: function () {
-          console.log('Autoplay acionado!');
-        }
       },
     });
 
-    // Fallback manual: Simular o clique no botão "próximo" caso o autoplay falhe
-    setInterval(() => {
-      console.log('Avançando slide manualmente.');
-      swiper.slideNext(); // Forçar a mudança para o próximo slide
-    }, 20000); // A cada 20 segundos
-
-    // Atualizar a página a cada 2 minutos (120000 ms)
-    setInterval(() => {
-      location.reload(); // Recarrega a página, como pressionar F5
-    }, 120000); // 2 minutos em milissegundos
-
-    // Chamar a função para carregar as imagens
-    fetchGoogleDriveImages();
+    // Chamar a função para carregar as imagens e vídeos
+    fetchGoogleDriveFiles();
   </script>
 </body>
 </html>
