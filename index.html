@@ -44,10 +44,6 @@
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     }
 
-    .upload-form input[type="file"] {
-      margin-right: 10px;
-    }
-
     /* Estilo para mensagem de erro */
     .error-message {
       color: red;
@@ -121,13 +117,39 @@
             // Se for um vídeo
             else if (mimeType.startsWith('video/')) {
               const videoUrl = `https://drive.google.com/file/d/${file.id}/preview`;
-              const video = document.createElement('iframe'); // Usando iframe para vídeos
-              video.src = videoUrl;
-              video.width = "100%";
-              video.height = "100%";
-              video.allow = "autoplay"; // Permitir autoplay no iframe
-              video.style.border = "none"; // Remover borda do iframe
-              slide.appendChild(video);
+              const iframe = document.createElement('iframe'); // Usando <iframe>
+              iframe.src = videoUrl;
+              iframe.allow = "autoplay"; // Permitir autoplay
+              iframe.frameBorder = "0"; // Remove a borda do iframe
+              iframe.style.width = "100%";
+              iframe.style.height = "100%";
+              iframe.style.opacity = "0"; // Inicialmente invisível
+
+              // Exibir o iframe após o carregamento
+              iframe.onload = () => {
+                iframe.style.opacity = '1';
+                
+                // Simular o clique no botão de play
+                setTimeout(() => {
+                  const playButton = iframe.contentWindow.document.querySelector('.ytp-large-play-button');
+                  if (playButton) {
+                    playButton.click();
+                  }
+                }, 100); // Atraso de 100ms para garantir que o iframe esteja totalmente carregado
+              };
+
+              // Evento para pausar o carrossel enquanto o vídeo é reproduzido
+              iframe.addEventListener('play', () => {
+                swiper.autoplay.stop();
+              });
+
+              // Detecta quando o vídeo termina e reinicia o carrossel
+              iframe.addEventListener('ended', () => {
+                swiper.autoplay.start(); // Reinicia o autoplay após o fim do vídeo
+                swiper.slideNext(); // Avança para a próxima imagem
+              });
+
+              slide.appendChild(iframe);
             }
 
             carouselImages.appendChild(slide);
@@ -163,10 +185,10 @@
 
     // Adicionar um timer para garantir que o autoplay funcione corretamente
     setInterval(() => {
-      if (swiper.slides.length > 0) { // Verifica se há slides
+      if (swiper.slides.length > 0 && !swiper.autoplay.running) { // Verifica se há slides e se o autoplay está pausado
         swiper.slideNext(); // Muda para o próximo slide
       }
-    }, 20000); // Troca a cada 20 segundos
+    }, 20000); // Troca a cada 20 segundos, se autoplay estiver ativo
 
     // Atualizar a página a cada 2 minutos (120.000 milissegundos)
     setTimeout(() => {
