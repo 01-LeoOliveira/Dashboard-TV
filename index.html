@@ -70,9 +70,13 @@
   </div>
 
   <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <!-- API do YouTube Player -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+
   <script>
     const FOLDER_ID = '1fDUpVVse5HpIs6Rv8oFuHmpF36ZUbIoI'; // ID da pasta no Google Drive
     const API_KEY = 'AIzaSyBT_UvwH2mg-QtCGEkqkAFxlV4dfjMRHgw'; // Sua chave de API
+    let videoPlayer; // Variável para controlar o player do vídeo
 
     const carouselImages = document.getElementById('carousel-images');
     const errorMessage = document.getElementById('error-message');
@@ -128,28 +132,14 @@
               // Exibir o iframe após o carregamento
               iframe.onload = () => {
                 iframe.style.opacity = '1';
-                
-                // Simular o clique no botão de play
-                setTimeout(() => {
-                  const playButton = iframe.contentWindow.document.querySelector('.ytp-large-play-button');
-                  if (playButton) {
-                    playButton.click();
-                  }
-                }, 100); // Atraso de 100ms para garantir que o iframe esteja totalmente carregado
               };
 
-              // Evento para pausar o carrossel enquanto o vídeo é reproduzido
-              iframe.addEventListener('play', () => {
-                swiper.autoplay.stop();
-              });
-
-              // Detecta quando o vídeo termina e reinicia o carrossel
-              iframe.addEventListener('ended', () => {
-                swiper.autoplay.start(); // Reinicia o autoplay após o fim do vídeo
-                swiper.slideNext(); // Avança para a próxima imagem
-              });
-
               slide.appendChild(iframe);
+
+              // Tentar iniciar o vídeo automaticamente
+              setTimeout(() => {
+                iframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+              }, 1000);
             }
 
             carouselImages.appendChild(slide);
