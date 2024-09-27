@@ -24,17 +24,12 @@
       align-items: center;
     }
 
-    .swiper-slide img, .swiper-slide video {
+    .swiper-slide img, .swiper-slide iframe {
       width: 90vw;
       height: 90vh;
       object-fit: contain;
       opacity: 0;
       transition: opacity 0.5s ease-in;
-    }
-
-    .swiper-slide video {
-      width: 100%;
-      height: 100%;
     }
 
     /* Estilo do Formulário */
@@ -63,11 +58,11 @@
   </style>
 </head>
 <body>
-
+  
   <!-- Mensagem de Erro -->
   <div class="error-message" id="error-message">Erro ao carregar imagens. Tente novamente mais tarde.</div>
 
-  <!-- Carrossel de Imagens -->
+  <!-- Carrossel de Imagens e Vídeos -->
   <div class="swiper-container">
     <div class="swiper-wrapper" id="carousel-images">
       <!-- Imagens e vídeos serão inseridos dinamicamente -->
@@ -101,6 +96,7 @@
 
           data.files.forEach(file => {
             const mimeType = file.mimeType;
+
             const slide = document.createElement('div');
             slide.classList.add('swiper-slide');
 
@@ -114,32 +110,23 @@
               img.onload = () => {
                 img.style.opacity = '1'; // Exibe a imagem após o carregamento
               };
-
+              
               img.onerror = () => {
                 console.error('Erro ao carregar imagem:', imageUrl);
+                img.src = ''; // Limpa a imagem se houver erro
               };
 
               slide.appendChild(img);
             }
-
             // Se for um vídeo
-            if (mimeType.startsWith('video/')) {
-              const videoUrl = `https://drive.google.com/uc?id=${file.id}&export=download`;
-              const video = document.createElement('video');
+            else if (mimeType.startsWith('video/')) {
+              const videoUrl = `https://drive.google.com/file/d/${file.id}/preview`;
+              const video = document.createElement('iframe'); // Usando iframe para vídeos
               video.src = videoUrl;
-              video.controls = false;
-              video.autoplay = false;
-              video.loop = false;
-              video.muted = true; // Video sem som
-              
-              video.oncanplay = () => {
-                video.style.opacity = '1'; // Exibe o vídeo após o carregamento
-              };
-
-              video.onerror = () => {
-                console.error('Erro ao carregar vídeo:', videoUrl);
-              };
-
+              video.width = "100%";
+              video.height = "100%";
+              video.allow = "autoplay"; // Permitir autoplay no iframe
+              video.style.border = "none"; // Remover borda do iframe
               slide.appendChild(video);
             }
 
@@ -158,7 +145,7 @@
       }
     }
 
-    // Inicialização do carrossel Swiper com autoplay para imagens e vídeos
+    // Inicialização do carrossel Swiper com autoplay para mudar os slides a cada 20 segundos
     const swiper = new Swiper('.swiper-container', {
       loop: true,
       navigation: {
@@ -166,30 +153,25 @@
         prevEl: '.swiper-button-prev',
       },
       autoplay: {
-        delay: 20000, // 20 segundos para imagens
+        delay: 20000, // 20 segundos
         disableOnInteraction: false, // Continuar o autoplay mesmo após interação
-      },
-      on: {
-        slideChangeTransitionStart: function () {
-          const currentSlide = swiper.slides[swiper.activeIndex];
-          const video = currentSlide.querySelector('video');
-
-          if (video) {
-            // Pausar autoplay se for um vídeo e reproduzir o vídeo
-            swiper.autoplay.stop();
-            video.play();
-
-            // Quando o vídeo terminar, retomar o autoplay
-            video.onended = function () {
-              swiper.autoplay.start();
-            };
-          }
-        },
       },
     });
 
     // Chamar a função para carregar as imagens e vídeos
     fetchGoogleDriveFiles();
+
+    // Adicionar um timer para garantir que o autoplay funcione corretamente
+    setInterval(() => {
+      if (swiper.slides.length > 0) { // Verifica se há slides
+        swiper.slideNext(); // Muda para o próximo slide
+      }
+    }, 20000); // Troca a cada 20 segundos
+
+    // Atualizar a página a cada 2 minutos (120.000 milissegundos)
+    setTimeout(() => {
+      window.location.reload();
+    }, 120000);
   </script>
 </body>
 </html>
